@@ -14,10 +14,11 @@ import dfa.DFA;
 import dfa.State;
 
 public class NFA {
-    HashMap<String ,ConversionState> dfaStates;
+    HashMap<String, ConversionState> dfaStates;
     HashMap<String, NFAState> nfaStates;
     HashMap<String, HashSet<String>> closureTable;
     DFA resultDFA;
+
     public NFA(String description) throws Exception {
         this.dfaStates = new HashMap<String, ConversionState>();
         this.nfaStates = new HashMap<String, NFAState>();
@@ -43,11 +44,14 @@ public class NFA {
         printNFA();
         convertToDFA();
         addDFAAccepts(acceptStates);
-        printDFA();
+        printDFAConversion();
         this.resultDFA = createDFAStates();
+        for (State currentState : resultDFA.states) {
+            System.out.println(currentState.label + "   " + currentState.zeroLabel + "  " + currentState.oneLabel);
+        }
     }
 
-    public boolean run(String testString){
+    public boolean run(String testString) {
         return this.resultDFA.run(testString);
     }
 
@@ -77,7 +81,7 @@ public class NFA {
 
     }
 
-    public void printDFA() {
+    public void printDFAConversion() {
         String[][] table = new String[dfaStates.keySet().size() + 1][3];
         table[0] = new String[] { "label", "0", "1" };
         int i = 1;
@@ -206,7 +210,7 @@ public class NFA {
         while (currentDFAState != null) {
             if (!visitedStates.contains(currentDFAState)) {
                 String label = currentDFAState.getLabel();
-                if(!dfaStates.containsKey(label)){
+                if (!dfaStates.containsKey(label)) {
                     dfaStates.put(label, currentDFAState);
                     searchList.add(getConversionState(currentDFAState.zeros));
                     searchList.add(getConversionState(currentDFAState.ones));
@@ -215,38 +219,39 @@ public class NFA {
             }
             currentDFAState = searchList.poll();
         }
+        dfaStates.put("", new ConversionState(new HashSet<String>(), new HashSet<String>(), new HashSet<String>()));
     }
 
-    public DFA createDFAStates(){
-        
+    public DFA createDFAStates() {
+
         HashMap<String, Integer> labelMap = new HashMap<String, Integer>();
         int counter = 0;
-        
-        for(String label: dfaStates.keySet()){
+
+        for (String label : dfaStates.keySet()) {
             labelMap.put(label, counter);
             counter++;
         }
         State[] states = new State[dfaStates.size()];
-        ArrayList<Integer> acceptLabels = new ArrayList<Integer>(); 
-        int i =0;
-        for(String label: dfaStates.keySet()){
+        ArrayList<Integer> acceptLabels = new ArrayList<Integer>();
+        int i = 0;
+        for (String label : dfaStates.keySet()) {
             ConversionState currentState = dfaStates.get(label);
-            states[i] = new State(labelMap.get(label),labelMap.get(String.join("",currentState.zeros)), labelMap.get(String.join("",currentState.ones)));
-            if(currentState.isAccept){
+            states[i] = new State(labelMap.get(label), labelMap.get(String.join("", currentState.zeros)),
+                    labelMap.get(String.join("", currentState.ones)));
+            if (currentState.isAccept) {
                 acceptLabels.add(labelMap.get(label));
             }
             i++;
         }
-        return new DFA(states,acceptLabels.stream().mapToInt(elm -> elm).toArray());
-
+        return new DFA(states, acceptLabels.stream().mapToInt(elm -> elm).toArray());
     }
 
-    public void addDFAAccepts(String[] acceptLabels){
+    public void addDFAAccepts(String[] acceptLabels) {
         List<String> acceptList = Arrays.asList(acceptLabels);
-        for( String dfaLabel : dfaStates.keySet()){
+        for (String dfaLabel : dfaStates.keySet()) {
             ConversionState currentState = dfaStates.get(dfaLabel);
             currentState.labels.forEach(label -> {
-                if(acceptList.contains(label)){
+                if (acceptList.contains(label)) {
                     currentState.isAccept = true;
                 }
             });
@@ -256,7 +261,7 @@ public class NFA {
     public ConversionState getConversionState(HashSet<String> labels) {
         HashSet<String> zeroTransition = new HashSet<String>();
         HashSet<String> oneTransition = new HashSet<String>();
-        for(String label: labels){
+        for (String label : labels) {
             zeroTransition.addAll(nfaStates.get(label).zeros);
             oneTransition.addAll(nfaStates.get(label).ones);
         }
